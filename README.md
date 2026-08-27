@@ -281,6 +281,14 @@ This project builds on the Python scientific-computing ecosystem, FastAPI, sciki
 
 If you find a bug or have an idea for improving the gesture experience, open an issue or submit a pull request in the [repository](https://github.com/samvitexibition/Gesture_Calculator).
 
+OR
+
+You can also try the deployed version without installing anything:
+
+https://gesture-calculator-ten.vercel.app/
+
+For the online version, the browser may still require permission to access your camera.
+
 ---
 
 Made with curiosity, computer vision, and a webcam.
