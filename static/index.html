@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestureCalc — AI Hand Gesture Calculator</title>
+    <meta name="description" content="A real-time, hands-free AI calculator powered by ASL hand gestures and MediaPipe.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+/* =====================================================
+   GestureCalc — Design System
+   Color Scheme: Deep Teal + Electric Cyan + Charcoal
+   ===================================================== */
+
+:root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #21262d;
+    --border: #30363d;
+    --accent: #0969ff;
+    --accent-glow: rgba(88, 166, 255, 0.25);
+    --success: #059bff;
+    --success-glow: rgba(63, 185, 80, 0.25);
+    --warning: #e3b341;
+    --danger: #f85149;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --text-subtle: #484f58;
+    --ring-bg: rgba(255, 255, 255, 0.06);
+    --modal-bg: rgba(1, 4, 9, 0.85);
+}
+
+.light-theme {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --border: #d0d7de;
+    --accent: #0969da;
+    --accent-glow: rgba(9, 105, 218, 0.15);
+    --success: #1a7f37;
+    --success-glow: rgba(26, 127, 55, 0.15);
+    --warning: #9a6700;
+    --danger: #cf222e;
+    --text: #1f2328;
+    --text-muted: #636c76;
+    --text-subtle: #9198a1;
+    --ring-bg: rgba(0, 0, 0, 0.07);
+    --modal-bg: rgba(255, 255, 255, 0.88);
+}
+
+body[data-accent="blue"] {
+    --accent: #0969ff;
+    --accent-glow: rgba(9, 105, 255, 0.25);
+}
+body.light-theme[data-accent="blue"] {
+    --accent: #0969da;
+    --accent-glow: rgba(9, 105, 218, 0.15);
+}
+body[data-accent="purple"] {
+    --accent: #a371f7;
+    --accent-glow: rgba(163, 113, 247, 0.25);
+}
+body.light-theme[data-accent="purple"] {
+    --accent: #8250df;
+    --accent-glow: rgba(130, 80, 223, 0.15);
+}
+body[data-accent="green"] {
+    --accent: #2ea043;
+    --accent-glow: rgba(46, 160, 67, 0.25);
+}
+body.light-theme[data-accent="green"] {
+    --accent: #1a7f37;
+    --accent-glow: rgba(26, 127, 55, 0.15);
+}
+body[data-accent="orange"] {
+    --accent: #db6d28;
+    --accent-glow: rgba(219, 109, 40, 0.25);
+}
+body.light-theme[data-accent="orange"] {
+    --accent: #bc4c00;
+    --accent-glow: rgba(188, 76, 0, 0.15);
+}
+body[data-accent="pink"] {
+    --accent: #f778ba;
+    --accent-glow: rgba(247, 120, 186, 0.25);
+}
+body.light-theme[data-accent="pink"] {
+    --accent: #bf3989;
+    --accent-glow: rgba(191, 57, 137, 0.15);
+}
+body[data-accent="cyan"] {
+    --accent: #39c5cf;
+    --accent-glow: rgba(57, 197, 207, 0.25);
+}
+body.light-theme[data-accent="cyan"] {
+    --accent: #0598a6;
+    --accent-glow: rgba(5, 152, 166, 0.15);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===== INTRO ===== */
+.intro-screen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1), opacity 0.7s ease;
+}
+
+.intro-screen.slide-up {
+    transform: translateY(-100vh);
+    opacity: 0;
+}
+
+.intro-bg-glow {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.intro-content {
+    text-align: center;
+    max-width: 680px;
+    padding: 20px;
+    animation: riseIn 0.8s ease both;
+}
+
+@keyframes riseIn {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.intro-eyebrow {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 6px 16px;
+    border-radius: 99px;
+    margin-bottom: 24px;
+}
+
+.logo-title {
+    font-size: 5.5rem;
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 16px;
+}
+
+.logo-title span {
+    color: var(--accent);
+}
+
+.intro-subtitle {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    font-weight: 400;
+}
+
+.intro-details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 40px;
+    text-align: left;
+}
+
+.intro-details h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.intro-details p {
+    line-height: 1.75;
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.primary-btn:hover {
+    background: #79b8ff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--accent-glow);
+}
+
+/* ===== MODALS ===== */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--modal-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.modal-content {
+    position: relative;
+    z-index: 1;
+    width: 480px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalIn 0.25s ease both;
+}
+
+.modal-wide {
+    width: 640px;
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.97) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.icon-btn:hover {
+    color: var(--text);
+}
+
+.settings-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-group:last-of-type {
+    border-bottom: none;
+}
+
+.settings-label-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.settings-label {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.settings-hint {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.settings-input {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.modal-footer {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ===== GESTURE GUIDE ===== */
+.guide-intro {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.guide-section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 20px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.guide-section-title:first-of-type {
+    margin-top: 0;
+}
+
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.guide-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 8px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.15s, border-color 0.15s;
+}
+
+.guide-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--text-muted);
+}
+
+.guide-card.accent {
+    border-color: var(--accent);
+}
+
+.guide-card.accent:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.guide-card.success {
+    border-color: var(--success);
+}
+
+.guide-card.success:hover {
+    border-color: var(--success);
+    box-shadow: 0 0 12px var(--success-glow);
+}
+
+.guide-card.warn {
+    border-color: var(--warning);
+}
+
+.guide-card.warn:hover {
+    border-color: var(--warning);
+    box-shadow: 0 0 12px rgba(227, 179, 65, 0.25);
+}
+
+.guide-emoji {
+    font-size: 2.2rem;
+    line-height: 1;
+}
+
+.guide-key {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    color: var(--text);
+}
+
+.guide-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* ===== DASHBOARD ===== */
+.dashboard {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 28px;
+    height: 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+}
+
+.nav-mode-chip {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    padding: 3px 12px;
+    border-radius: 99px;
+}
+
+.nav-right {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.nav-btn:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+}
+
+.primary-nav-btn {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.primary-nav-btn:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ===== GRID ===== */
+.grid-container {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 20px;
+    padding: 20px;
+    flex: 1;
+    overflow: hidden;
+}
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    margin-bottom: 14px;
+}
+
+/* ===== LEFT COLUMN ===== */
+.left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.camera-panel {
+    flex: 1;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+}
+
+.camera-badges {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.badge {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.badge-active {
+    background: rgba(63, 185, 80, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(63, 185, 80, 0.4);
+}
+
+.badge-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.video-wrapper {
+    position: absolute;
+    inset: 0;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    transition: transform 0.3s;
+}
+
+.video-no-mirror {
+    transform: scaleX(1) !important;
+}
+
+canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: scaleX(-1);
+    pointer-events: none;
+}
+
+.canvas-no-mirror {
+    transform: scaleX(1) !important;
+}
+
+.gesture-panel {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+}
+
+.circular-progress {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
+}
+
+.progress-ring {
+    transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+    stroke-dasharray: 251.2;
+    stroke-dashoffset: 251.2;
+    transition: stroke-dashoffset 0.1s linear, stroke 0.3s;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+}
+
+.gesture-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.gesture-desc {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.commit-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--success);
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.commit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--success-glow);
+}
+
+/* ===== RIGHT COLUMN ===== */
+.right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.equation-panel {
+    flex: 1;
+    justify-content: center;
+}
+
+.equation-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--text);
+    word-break: break-all;
+    line-height: 1.2;
+}
+
+.result-panel {
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    border-color: var(--accent);
+    background: linear-gradient(135deg, var(--surface) 0%, rgba(88, 166, 255, 0.05) 100%);
+}
+
+.result-panel .label {
+    color: var(--accent);
+}
+
+.result-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 6rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    text-align: center;
+    transition: color 0.3s;
+}
+
+/* ===== SIGN RENDERER ===== */
+.renderer-panel {
+    flex: 1.2;
+}
+
+.renderer-carousel {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    overflow-x: auto;
+    padding: 8px 4px 12px;
+    min-height: 130px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.sign-placeholder {
+    color: var(--text-subtle);
+    font-size: 0.95rem;
+    margin: auto;
+}
+
+.sign-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    animation: popIn 0.3s ease both;
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.sign-circle {
+    width: 90px;
+    height: 90px;
+    background: var(--surface-2);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* *** FIX: Use font-size for emoji, not background *** */
+    font-size: 3.2rem;
+    line-height: 1;
+}
+
+.sign-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: 'Space Mono', monospace;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+    </style>
+    <!-- MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js" crossorigin="anonymous"></script>
+</head>
+<body class="dark-theme">
+
+    <!-- Intro Screen -->
+    <div id="intro-screen" class="intro-screen">
+        <div class="intro-bg-glow"></div>
+        <div class="intro-bg-glow intro-bg-glow-2"></div>
+
+        <!-- Floating Particles -->
+        <div class="particles" id="particles-container">
+            <div class="particle" style="--x: 10%; --y: 20%; --duration: 6s; --delay: 0s;">✊</div>
+            <div class="particle" style="--x: 85%; --y: 15%; --duration: 7s; --delay: 1s;">✌️</div>
+            <div class="particle" style="--x: 70%; --y: 75%; --duration: 8s; --delay: 0.5s;">🖐</div>
+            <div class="particle" style="--x: 15%; --y: 80%; --duration: 6.5s; --delay: 2s;">👍</div>
+            <div class="particle" style="--x: 50%; --y: 10%; --duration: 7.5s; --delay: 1.5s;">☝️</div>
+            <div class="particle" style="--x: 30%; --y: 60%; --duration: 5.5s; --delay: 0.8s;">👎</div>
+            <div class="particle" style="--x: 90%; --y: 50%; --duration: 9s; --delay: 3s;">🤘</div>
+            <div class="particle" style="--x: 55%; --y: 90%; --duration: 6s; --delay: 2.5s;">👇</div>
+        </div>
+
+        <div class="intro-content">
+            <!-- Version Badge -->
+            <div class="intro-version-badge">v2.0 — Open Beta</div>
+            <div class="intro-eyebrow">AI-Powered Accessibility Tool</div>
+            <h1 class="logo-title">Gesture<span>Calc</span></h1>
+            <p class="intro-subtitle">Compute with your hands. No keyboard needed.</p>
+
+            <!-- Feature Showcase Cards -->
+            <div class="intro-features">
+                <div class="feature-card" style="--delay: 0.2s;">
+                    <div class="feature-icon">🧠</div>
+                    <h4>AI Recognition</h4>
+                    <p>Real-time ML model classifies 18 unique hand gestures with 95%+ accuracy</p>
+                </div>
+                <div class="feature-card" style="--delay: 0.4s;">
+                    <div class="feature-icon">⚡</div>
+                    <h4>Instant Response</h4>
+                    <p>Sub-50ms latency from gesture detection to calculator input via WebSocket</p>
+                </div>
+                <div class="feature-card" style="--delay: 0.6s;">
+                    <div class="feature-icon">🤲</div>
+                    <h4>Two-Hand Mode</h4>
+                    <p>Combine both hands to count up to 10, or use one hand for operators</p>
+                </div>
+                <div class="feature-card" style="--delay: 0.8s;">
+                    <div class="feature-icon">♿</div>
+                    <h4>Accessibility First</h4>
+                    <p>Built for everyone — no keyboard or mouse required to perform math</p>
+                </div>
+            </div>
+
+            <!-- About Section -->
+<div class="intro-details">
+    <h3>Why we built this</h3>
+    <p>GestureCalc bridges the gap between human-computer interaction and accessibility. By translating American Sign Language (ASL) digits and operator gestures into real-time mathematical expressions, we are creating a hands-free, intuitive, and inclusive way to compute — for everyone.</p>
+    <p>When you first launch the app, a short interactive calibration wizard will guide you through optimal lighting, hand distance, and a single gesture test to ensure accurate recognition.</p>
+</div>
+
+            <!-- Tech Stack Badges -->
+            <div class="tech-stack">
+                <span class="tech-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    MediaPipe
+                </span>
+                <span class="tech-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    FastAPI
+                </span>
+                <span class="tech-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+                    WebSocket
+                </span>
+                <span class="tech-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12l4-4"/><circle cx="12" cy="12" r="2"/></svg>
+                    Scikit-Learn
+                </span>
+                <span class="tech-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    OpenCV
+                </span>
+            </div>
+
+            <button id="start-btn" class="primary-btn glow-btn">
+                <span>Launch App</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+
+            <button id="calib-intro-btn" class="secondary-btn" style="margin-top: 12px; font-size: 0.95rem;">
+                🎯 Calibration Wizard (Recommended)
+            </button>
+
+            <p class="intro-hint">Press <kbd>Enter</kbd> or click to begin</p>
+
+            <!-- Credits -->
+            <div class="intro-credits">
+                Made with ❤️ for accessible computing
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-overlay" id="settings-overlay"></div>
+        <div class="modal-content panel modal-settings-wide">
+            <div class="modal-header">
+                <h2>⚙ Settings</h2>
+                <button id="close-settings-btn" class="icon-btn">✕</button>
+            </div>
+
+            <div class="settings-section-title">Display</div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Theme</span>
+                    <span class="settings-hint">Choose your preferred display mode</span>
+                </div>
+                <select id="theme-select" class="settings-input">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Accent Color</span>
+                    <span class="settings-hint">Customize the primary UI color</span>
+                </div>
+                <select id="accent-select" class="settings-input">
+                    <option value="blue">Electric Blue</option>
+                    <option value="purple">Violet</option>
+                    <option value="green">Emerald</option>
+                    <option value="orange">Amber</option>
+                    <option value="pink">Rose</option>
+                    <option value="cyan">Cyan</option>
+                </select>
+            </div>
+
+            <div class="settings-section-title">Camera</div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Mirror Camera</span>
+                    <span class="settings-hint">Flip the webcam horizontally</span>
+                </div>
+                <select id="mirror-select" class="settings-input">
+                    <option value="yes">Mirrored</option>
+                    <option value="no">Normal</option>
+                </select>
+            </div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Skeleton Overlay</span>
+                    <span class="settings-hint">Hand bone &amp; joint visualization style</span>
+                </div>
+                <select id="skeleton-select" class="settings-input">
+                    <option value="neon">Neon Glow</option>
+                    <option value="classic">Classic</option>
+                    <option value="minimal">Minimal Dots</option>
+                    <option value="off">Hidden</option>
+                </select>
+            </div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Show Confidence</span>
+                    <span class="settings-hint">Display the confidence percentage badge</span>
+                </div>
+                <select id="confidence-toggle" class="settings-input">
+                    <option value="yes">Visible</option>
+                    <option value="no">Hidden</option>
+                </select>
+            </div>
+
+            <div class="settings-section-title">Interaction</div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Lock-in Speed</span>
+                    <span class="settings-hint">How long to hold a gesture before committing</span>
+                </div>
+                <select id="speed-select" class="settings-input">
+                    <option value="fast">Fast (0.5s)</option>
+                    <option value="normal" selected>Normal (1s)</option>
+                    <option value="slow">Slow (1.5s)</option>
+                </select>
+            </div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Sound Effects</span>
+                    <span class="settings-hint">Play a sound when a gesture is committed</span>
+                </div>
+                <select id="sound-select" class="settings-input">
+                    <option value="on">Enabled</option>
+                    <option value="off" selected>Disabled</option>
+                </select>
+            </div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Detection Sensitivity</span>
+                    <span class="settings-hint">Adjust hand detection confidence threshold</span>
+                </div>
+                <select id="sensitivity-select" class="settings-input">
+                    <option value="high">High (noisy but responsive)</option>
+                    <option value="medium" selected>Medium (balanced)</option>
+                    <option value="low">Low (stable but slower)</option>
+                </select>
+            </div>
+
+            <div class="settings-section-title">Calibration</div>
+            <div class="settings-group">
+                <div class="settings-label-block">
+                    <span class="settings-label">Onboarding & Setup</span>
+                    <span class="settings-hint">Re-run interactive camera & gesture calibration</span>
+                </div>
+                <button id="recalib-settings-btn" class="secondary-btn" style="white-space: nowrap;">🎯 Recalibrate Camera</button>
+            </div>
+
+            <div class="modal-footer">
+                <button id="reset-settings-btn" class="secondary-btn">Reset Defaults</button>
+                <button id="save-settings-btn" class="primary-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gesture Guide Modal -->
+    <div id="gesture-modal" class="modal hidden">
+        <div class="modal-overlay" id="gesture-overlay"></div>
+        <div class="modal-content panel modal-wide">
+            <div class="modal-header">
+                <h2>Gesture Guide</h2>
+                <button id="close-gesture-btn" class="icon-btn">✕</button>
+            </div>
+            <p class="guide-intro">Hold each gesture steady for 1 second to commit it. Single-hand gestures use finger counting. Digits 6–10 combine two hands.</p>
+
+            <h3 class="guide-section-title">Single-Hand Digits (0–5)</h3>
+            <div class="guide-grid">
+                <div class="guide-card"><span class="guide-emoji">✊</span><span class="guide-key">0</span><span class="guide-hint">Closed fist</span></div>
+                <div class="guide-card"><span class="guide-emoji">☝️</span><span class="guide-key">1</span><span class="guide-hint">Index finger up</span></div>
+                <div class="guide-card"><span class="guide-emoji">✌️</span><span class="guide-key">2</span><span class="guide-hint">V-sign (horizontal)</span></div>
+                <div class="guide-card"><span class="guide-emoji">🤘</span><span class="guide-key">3</span><span class="guide-hint">Index + pinky out</span></div>
+                <div class="guide-card"><span class="guide-emoji">🖐<span style="font-size:0.5em;">⬇👍</span></span><span class="guide-key">4</span><span class="guide-hint">4 fingers, no thumb</span></div>
+                <div class="guide-card"><span class="guide-emoji">🖐</span><span class="guide-key">5</span><span class="guide-hint">Open hand, all fingers</span></div>
+            </div>
+
+            <h3 class="guide-section-title">Two-Hand Digits (6–10)</h3>
+            <p class="guide-intro" style="margin-top:0;">Show both hands — finger counts are added together.</p>
+            <div class="guide-grid">
+                <div class="guide-card"><span class="guide-emoji">☝️+🖐</span><span class="guide-key">6</span><span class="guide-hint">1 + 5 fingers</span></div>
+                <div class="guide-card"><span class="guide-emoji">✌️+🖐</span><span class="guide-key">7</span><span class="guide-hint">2 + 5 fingers</span></div>
+                <div class="guide-card"><span class="guide-emoji">🤘+🖐</span><span class="guide-key">8</span><span class="guide-hint">3 + 5 fingers</span></div>
+                <div class="guide-card"><span class="guide-emoji">🖐+<span style="font-size:0.85em;">4</span></span><span class="guide-key">9</span><span class="guide-hint">5 + 4 fingers</span></div>
+                <div class="guide-card"><span class="guide-emoji">🖐+🖐</span><span class="guide-key">10</span><span class="guide-hint">5 + 5 fingers</span></div>
+            </div>
+
+            <h3 class="guide-section-title">Operators (Inverted Hand — Palm Down)</h3>
+            <div class="guide-grid">
+                <div class="guide-card accent"><span class="guide-emoji">👍</span><span class="guide-key">+</span><span class="guide-hint">Thumbs up</span></div>
+                <div class="guide-card accent"><span class="guide-emoji">👎</span><span class="guide-key">−</span><span class="guide-hint">Thumbs down</span></div>
+                <div class="guide-card accent"><span class="guide-emoji">🤘⬇</span><span class="guide-key">×</span><span class="guide-hint">Rock sign, inverted</span></div>
+                <div class="guide-card accent"><span class="guide-emoji">✌️⬇</span><span class="guide-key">÷</span><span class="guide-hint">V-sign, inverted</span></div>
+                <div class="guide-card success"><span class="guide-emoji">👇</span><span class="guide-key">=</span><span class="guide-hint">Point down (evaluate)</span></div>
+            </div>
+
+            <h3 class="guide-section-title">Actions</h3>
+            <div class="guide-grid">
+                <div class="guide-card warn"><span class="guide-emoji">🖐⬇</span><span class="guide-key">Clear</span><span class="guide-hint">Open hand, inverted</span></div>
+                <div class="guide-card warn"><span class="guide-emoji">✊⬇</span><span class="guide-key">Back</span><span class="guide-hint">Fist, inverted</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calibration Wizard Modal -->
+    <div id="calibration-modal" class="modal hidden">
+        <div class="modal-overlay" id="calibration-overlay"></div>
+        <div class="modal-content panel modal-wide calib-wizard-content">
+            <div class="modal-header">
+                <h2>🎯 Onboarding & Calibration Wizard</h2>
+                <button id="close-calib-btn" class="icon-btn">✕</button>
+            </div>
+
+            <!-- Wizard Step Indicator -->
+            <div class="calib-steps-header">
+                <div class="calib-step-tab active" id="tab-step-1" data-step="1">
+                    <span class="step-num">1</span>
+                    <span class="step-label">💡 Lighting</span>
+                </div>
+                <div class="calib-step-line"></div>
+                <div class="calib-step-tab" id="tab-step-2" data-step="2">
+                    <span class="step-num">2</span>
+                    <span class="step-label">📏 Distance</span>
+                </div>
+                <div class="calib-step-line"></div>
+                <div class="calib-step-tab" id="tab-step-3" data-step="3">
+                    <span class="step-num">3</span>
+                    <span class="step-label">✌️ Gesture Test</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Lighting -->
+            <div class="calib-step-container" id="calib-step-1">
+                <h3 class="calib-step-title">Step 1: Check Environmental Lighting</h3>
+                <p class="calib-step-subtitle">Ensure your room lighting is bright and even for smooth hand tracking.</p>
+
+                <div class="calib-metric-card">
+                    <div class="metric-row">
+                        <span class="metric-label">Ambient Lighting Level</span>
+                        <span class="metric-value" id="calib-brightness-val">0%</span>
+                    </div>
+                    <div class="meter-bar-track">
+                        <div class="meter-bar-fill" id="calib-brightness-fill" style="width: 0%;"></div>
+                        <div class="meter-ideal-zone" style="left: 30%; width: 55%;" title="Ideal Zone (30% - 85%)"></div>
+                    </div>
+                    <div class="calib-status-badge info" id="calib-lighting-status">
+                        Analyzing video frame brightness...
+                    </div>
+                </div>
+                <div class="calib-tip">
+                    💡 <strong>Tip:</strong> Face your main light source. Avoid dark shadows or strong backlight behind you.
+                </div>
+            </div>
+
+            <!-- Step 2: Distance -->
+            <div class="calib-step-container hidden" id="calib-step-2">
+                <h3 class="calib-step-title">Step 2: Check Hand Positioning & Distance</h3>
+                <p class="calib-step-subtitle">Raise your hand inside the webcam view. Position it 1 to 2 feet (30-60cm) from the camera.</p>
+
+                <div class="calib-metric-card">
+                    <div class="metric-row">
+                        <span class="metric-label">Hand Frame Coverage</span>
+                        <span class="metric-value" id="calib-distance-val">0%</span>
+                    </div>
+                    <div class="meter-bar-track">
+                        <div class="meter-bar-fill" id="calib-distance-fill" style="width: 0%;"></div>
+                        <div class="meter-ideal-zone" style="left: 18%; width: 30%;" title="Ideal Zone (18% - 48%)"></div>
+                    </div>
+                    <div class="calib-status-badge info" id="calib-distance-status">
+                        Raise hand into camera view...
+                    </div>
+                </div>
+                <div class="calib-tip">
+                    📏 <strong>Tip:</strong> Keep your hand centered in frame with fingers unblocked.
+                </div>
+            </div>
+
+            <!-- Step 3: Test Gesture -->
+            <div class="calib-step-container hidden" id="calib-step-3">
+                <h3 class="calib-step-title">Step 3: Test Single Gesture Recognition</h3>
+                <p class="calib-step-subtitle">Form a <strong>Fist (0)</strong> or <strong>Point Finger (1)</strong> and hold steady for 1 second.</p>
+
+                <div class="calib-metric-card gesture-test-card">
+                    <div class="gesture-test-display">
+                        <div class="target-gesture-box">
+                            <span class="gesture-icon">✊ / ☝️</span>
+                            <span class="gesture-target-name">Target: Fist (0) or Point (1)</span>
+                        </div>
+                        <div class="live-gesture-box">
+                            <span class="live-detected-symbol" id="calib-detected-symbol">—</span>
+                            <span class="live-label">Live Detection</span>
+                        </div>
+                    </div>
+                    <div class="meter-bar-track" style="margin-top: 14px;">
+                        <div class="meter-bar-fill success" id="calib-gesture-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="calib-status-badge info" id="calib-gesture-status">
+                        Show Fist (0) or Index Finger (1)...
+                    </div>
+                </div>
+                <div class="calib-tip">
+                    ✨ <strong>Tip:</strong> Hold your hand upright facing the camera.
+                </div>
+            </div>
+
+            <!-- Footer Action Controls -->
+            <div class="modal-footer calib-footer">
+                <button id="calib-skip-btn" class="secondary-btn">Skip Wizard</button>
+                <div class="calib-nav-buttons">
+                    <button id="calib-prev-btn" class="secondary-btn hidden">← Back</button>
+                    <button id="calib-next-btn" class="primary-btn">Next Step →</button>
+                    <button id="calib-finish-btn" class="primary-btn success-btn hidden">✓ Finish Calibration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard hidden">
+
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="nav-left">
+                <span class="logo">Gesture<span class="logo-accent">Calc</span></span>
+                <span class="nav-mode-chip">ASL Standard Mode</span>
+                <span class="nav-status-dot" id="ws-status" title="WebSocket connected">●</span>
+            </div>
+            <div class="nav-right">
+                <button class="nav-btn" id="open-calib-btn">🎯 Calibrate</button>
+                <button class="nav-btn" id="open-gesture-btn">📖 Gesture Guide</button>
+                <button class="nav-btn primary-nav-btn" id="open-settings-btn">⚙ Settings</button>
+            </div>
+        </nav>
+
+        <!-- Main Content Grid -->
+        <main class="grid-container">
+
+            <!-- Left Column -->
+            <div class="left-col">
+
+                <!-- Camera Viewport -->
+                <div class="camera-panel panel">
+                    <div class="camera-badges">
+                        <span class="badge badge-active">● MediaPipe Active</span>
+                        <span class="badge badge-secondary" id="confidence-badge">Confidence: — %</span>
+                        <span class="badge badge-fps" id="fps-badge">— FPS</span>
+                    </div>
+                    <div class="video-wrapper">
+                        <video id="webcam" autoplay playsinline></video>
+                        <canvas id="output_canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gesture Detected Box -->
+                <div class="gesture-panel panel">
+                    <div class="circular-progress">
+                        <svg class="progress-ring" width="90" height="90">
+                            <circle class="progress-ring-circle-bg" stroke="var(--ring-bg)" stroke-width="5" fill="transparent" r="40" cx="45" cy="45"/>
+                            <circle id="progress-ring-circle" class="progress-ring-circle" stroke="var(--accent)" stroke-width="5" fill="transparent" r="40" cx="45" cy="45"/>
+                        </svg>
+                        <span class="progress-text" id="detected-symbol-text">—</span>
+                    </div>
+
+                    <div class="gesture-info">
+                        <div class="label">CURRENT GESTURE</div>
+                        <div class="gesture-desc" id="gesture-desc">Waiting for input…</div>
+                    </div>
+
+                    <button class="commit-btn" id="commit-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        COMMIT
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-col">
+
+                <!-- Equation Buffer -->
+                <div class="equation-panel panel">
+                    <div class="label">LIVE EQUATION</div>
+                    <div class="equation-text" id="calc-expression">…</div>
+                </div>
+
+                <!-- Calculated Result -->
+                <div class="result-panel panel">
+                    <div class="label">RESULT</div>
+                    <div class="result-text" id="calc-result">—</div>
+                </div>
+
+                <!-- Answer Sign Renderer -->
+                <div class="renderer-panel panel">
+                    <div class="label">RESULT IN SIGN LANGUAGE</div>
+                    <div class="renderer-carousel" id="sign-renderer">
+                        <div class="sign-placeholder">Perform a calculation to see result signs</div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
+
+// ─── DOM Elements ───────────────────────────────────────────
+const introScreen       = document.getElementById("intro-screen");
+const dashboard         = document.getElementById("dashboard");
+const startBtn          = document.getElementById("start-btn");
+
+const video             = document.getElementById("webcam");
+const canvasElement     = document.getElementById("output_canvas");
+const canvasCtx         = canvasElement.getContext("2d");
+
+const confidenceBadge   = document.getElementById("confidence-badge");
+const fpsBadge          = document.getElementById("fps-badge");
+const progressRingCircle= document.getElementById("progress-ring-circle");
+const detectedSymbolText= document.getElementById("detected-symbol-text");
+const gestureDesc       = document.getElementById("gesture-desc");
+
+const calcExpression    = document.getElementById("calc-expression");
+const calcResult        = document.getElementById("calc-result");
+const signRenderer      = document.getElementById("sign-renderer");
+
+// Settings
+const settingsModal     = document.getElementById("settings-modal");
+const settingsOverlay   = document.getElementById("settings-overlay");
+const openSettingsBtn   = document.getElementById("open-settings-btn");
+const closeSettingsBtn  = document.getElementById("close-settings-btn");
+const saveSettingsBtn   = document.getElementById("save-settings-btn");
+const resetSettingsBtn  = document.getElementById("reset-settings-btn");
+const themeSelect       = document.getElementById("theme-select");
+const accentSelect      = document.getElementById("accent-select");
+const mirrorSelect      = document.getElementById("mirror-select");
+const speedSelect       = document.getElementById("speed-select");
+const skeletonSelect    = document.getElementById("skeleton-select");
+const confidenceToggle  = document.getElementById("confidence-toggle");
+const soundSelect       = document.getElementById("sound-select");
+const sensitivitySelect = document.getElementById("sensitivity-select");
+
+// Gesture Guide
+const gestureModal      = document.getElementById("gesture-modal");
+const gestureOverlay    = document.getElementById("gesture-overlay");
+const openGestureBtn    = document.getElementById("open-gesture-btn");
+const closeGestureBtn   = document.getElementById("close-gesture-btn");
+
+// ─── State ──────────────────────────────────────────────────
+let handLandmarker = undefined;
+let webcamRunning  = false;
+let lastVideoTime  = -1;
+let ws             = null;
+let currentSpeedMultiplier = 1.0;
+let currentSkeletonStyle   = 'neon';
+let showConfidence         = true;
+let soundEnabled           = false;
+let fpsFrames              = 0;
+let fpsLastTime            = performance.now();
+
+// ─── Hand skeleton connections ───────────────────────────────
+const CONNECTIONS = [
+    [0,1],[1,2],[2,3],[3,4],
+    [0,5],[5,6],[6,7],[7,8],
+    [5,9],[9,10],[10,11],[11,12],
+    [9,13],[13,14],[14,15],[15,16],
+    [13,17],[0,17],[17,18],[18,19],[19,20]
+];
+
+// ─── Sign emoji map ──────────────────────────────────────────
+const SIGN_MAP = {
+    '0': '✊', '1': '☝️', '2': '✌️', '3': '🤘', '4': '🖖',
+    '5': '🖐', '6': '☝️+🖐', '7': '✌️+🖐', '8': '🤘+🖐', '9': '🖐+🖖',
+    '+': '👍', '-': '👎', '*': '🤘⬇', '/': '✌️⬇', '=': '👇'
+};
+
+// ─── FPS Counter ─────────────────────────────────────────────
+function updateFPS() {
+    fpsFrames++;
+    const now = performance.now();
+    if (now - fpsLastTime >= 1000) {
+        fpsBadge.textContent = `${fpsFrames} FPS`;
+        fpsFrames = 0;
+        fpsLastTime = now;
+    }
+}
+
+// ─── MediaPipe Setup ─────────────────────────────────────────
+async function createHandLandmarker() {
+    const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+    );
+    handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+            delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 2,
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+}
+createHandLandmarker();
+
+// ─── Persist & Load Settings ─────────────────────────────────
+const DEFAULT_SETTINGS = {
+    theme: 'dark',
+    accent: 'blue',
+    mirror: 'yes',
+    speed: 'normal',
+    skeleton: 'neon',
+    confidence: 'yes',
+    sound: 'off',
+    sensitivity: 'medium'
+};
+
+function loadSettings() {
+    const saved = JSON.parse(localStorage.getItem('gesturecalc_settings') || '{}');
+    const s = { ...DEFAULT_SETTINGS, ...saved };
+
+    applyTheme(s.theme);
+    themeSelect.value = s.theme;
+
+    applyAccent(s.accent);
+    accentSelect.value = s.accent;
+
+    applyMirror(s.mirror);
+    mirrorSelect.value = s.mirror;
+
+    applySpeed(s.speed);
+    speedSelect.value = s.speed;
+
+    applySkeleton(s.skeleton);
+    skeletonSelect.value = s.skeleton;
+
+    applyConfidenceToggle(s.confidence);
+    confidenceToggle.value = s.confidence;
+
+    applySound(s.sound);
+    soundSelect.value = s.sound;
+
+    applySensitivity(s.sensitivity);
+    sensitivitySelect.value = s.sensitivity;
+}
+
+function saveSettings() {
+    const settings = {
+        theme:       themeSelect.value,
+        accent:      accentSelect.value,
+        mirror:      mirrorSelect.value,
+        speed:       speedSelect.value,
+        skeleton:    skeletonSelect.value,
+        confidence:  confidenceToggle.value,
+        sound:       soundSelect.value,
+        sensitivity: sensitivitySelect.value,
+    };
+    localStorage.setItem('gesturecalc_settings', JSON.stringify(settings));
+
+    applyTheme(settings.theme);
+    applyAccent(settings.accent);
+    applyMirror(settings.mirror);
+    applySpeed(settings.speed);
+    applySkeleton(settings.skeleton);
+    applyConfidenceToggle(settings.confidence);
+    applySound(settings.sound);
+    applySensitivity(settings.sensitivity);
+
+    // Flash button to confirm
+    saveSettingsBtn.textContent = '✓ Saved!';
+    saveSettingsBtn.style.background = 'var(--success)';
+    setTimeout(() => {
+        saveSettingsBtn.textContent = 'Save Settings';
+        saveSettingsBtn.style.background = '';
+    }, 1500);
+    settingsModal.classList.add('hidden');
+}
+
+function resetSettings() {
+    localStorage.removeItem('gesturecalc_settings');
+    loadSettings();
+    // Visual feedback
+    resetSettingsBtn.textContent = '✓ Reset!';
+    setTimeout(() => { resetSettingsBtn.textContent = 'Reset Defaults'; }, 1200);
+}
+
+function applyTheme(value) {
+    if (value === 'light') {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+    } else {
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+    }
+}
+
+function applyAccent(value) {
+    document.body.setAttribute('data-accent', value);
+}
+
+function applyMirror(value) {
+    if (value === 'no') {
+        video.classList.add('video-no-mirror');
+        canvasElement.classList.add('canvas-no-mirror');
+    } else {
+        video.classList.remove('video-no-mirror');
+        canvasElement.classList.remove('canvas-no-mirror');
+    }
+}
+
+function applySpeed(value) {
+    const map = { fast: 2.0, normal: 1.0, slow: 0.5 };
+    currentSpeedMultiplier = map[value] || 1.0;
+}
+
+function applySkeleton(value) {
+    currentSkeletonStyle = value;
+}
+
+function applyConfidenceToggle(value) {
+    showConfidence = value === 'yes';
+    if (confidenceBadge) {
+        confidenceBadge.style.display = showConfidence ? '' : 'none';
+    }
+}
+
+function applySound(value) {
+    soundEnabled = value === 'on';
+}
+
+function applySensitivity(value) {
+    // This affects visual feedback mainly; actual model thresholds are server-side
+    // We can use it to filter low-confidence predictions client-side
+}
+
+// Load on boot
+loadSettings();
+
+// ─── Settings Modal Events ───────────────────────────────────
+openSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+settingsOverlay.addEventListener('click', () => settingsModal.classList.add('hidden'));
+saveSettingsBtn.addEventListener('click', saveSettings);
+resetSettingsBtn.addEventListener('click', resetSettings);
+
+// ─── Gesture Guide Modal Events ──────────────────────────────
+openGestureBtn.addEventListener('click', () => gestureModal.classList.remove('hidden'));
+closeGestureBtn.addEventListener('click', () => gestureModal.classList.add('hidden'));
+gestureOverlay.addEventListener('click', () => gestureModal.classList.add('hidden'));
+
+// ─── Enter key to launch ─────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !introScreen.classList.contains('hidden') && !introScreen.classList.contains('slide-up')) {
+        enableCam();
+    }
+    // Escape to close modals
+    if (e.key === 'Escape') {
+        if (!settingsModal.classList.contains('hidden')) settingsModal.classList.add('hidden');
+        if (!gestureModal.classList.contains('hidden')) gestureModal.classList.add('hidden');
+    }
+});
+
+// ─── Sound Effect ────────────────────────────────────────────
+function playCommitSound() {
+    if (!soundEnabled) return;
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+        oscillator.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.05);
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.15);
+    } catch (_) { /* ignore audio errors */ }
+}
+
+// ─── API Client ───────────────────────────────────────────────
+let clientState = {
+    calc_expression: "",
+    calc_result: "",
+    consecutive_pred: null,
+    consecutive_count: 0,
+    cooldown_frames: 0,
+    smoothed_hand_cache: {}
+};
+let isPredicting = false;
+
+function setApiStatus(connected) {
+    const statusDot = document.getElementById('ws-status');
+    if (statusDot) {
+        if (connected) {
+            statusDot.style.color = 'var(--success)';
+            statusDot.title = 'API connected';
+        } else {
+            statusDot.style.color = 'var(--danger)';
+            statusDot.title = 'API disconnected';
+        }
+    }
+}
+
+// ─── Sign Renderer ───────────────────────────────────────────
+function renderSigns(text) {
+    signRenderer.innerHTML = '';
+    const chars = text.toString().split('');
+    if (chars.length === 0) {
+        signRenderer.innerHTML = '<div class="sign-placeholder">No result yet</div>';
+        return;
+    }
+    chars.forEach(char => {
+        const emoji = SIGN_MAP[char];
+        if (!emoji) return; // skip chars with no mapping
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sign-wrapper';
+
+        const circle = document.createElement('div');
+        circle.className = 'sign-circle';
+        // Use textContent so emoji renders natively (not as broken image)
+        circle.textContent = emoji;
+
+        const label = document.createElement('div');
+        label.className = 'sign-label';
+        label.textContent = `"${char}"`;
+
+        wrapper.appendChild(circle);
+        wrapper.appendChild(label);
+        signRenderer.appendChild(wrapper);
+    });
+}
+
+// ─── HUD Update ──────────────────────────────────────────────
+let prevCooldown = false;
+
+function updateHUD(data) {
+    // Confidence badge
+    const conf = data.confidence || 0;
+    confidenceBadge.textContent = `Confidence: ${conf.toFixed(0)}%`;
+    if (conf > 70)      confidenceBadge.style.color = 'var(--success)';
+    else if (conf > 40) confidenceBadge.style.color = 'var(--warning)';
+    else                confidenceBadge.style.color = 'var(--danger)';
+
+    // Detected gesture
+    if (data.prediction && data.display_text) {
+        const symbol = data.display_text.includes('→') ? data.display_text.split('→')[1].trim() : data.display_text;
+        detectedSymbolText.textContent = symbol;
+        gestureDesc.textContent = `Detected "${data.display_text}" — hold to confirm`;
+    } else {
+        detectedSymbolText.textContent = '—';
+        gestureDesc.textContent = 'Waiting for input…';
+    }
+
+    // Progress ring
+    const circumference = 2 * Math.PI * 40; // r=40
+    if (data.cooldown) {
+        progressRingCircle.style.strokeDashoffset = 0;
+        progressRingCircle.style.stroke = 'var(--success)';
+        gestureDesc.textContent = '✓ Input Committed!';
+        // Play sound on transition to cooldown
+        if (!prevCooldown) playCommitSound();
+    } else {
+        let progress = Math.min((data.progress || 0) * currentSpeedMultiplier, 1.0);
+        progressRingCircle.style.strokeDashoffset = circumference - (progress * circumference);
+        progressRingCircle.style.stroke = 'var(--accent)';
+    }
+    prevCooldown = data.cooldown;
+
+    // Equation
+    calcExpression.textContent = data.calc_expression || '…';
+
+    // Result & sign renderer
+    if (data.calc_result) {
+        calcResult.textContent = data.calc_result;
+        if (data.calc_result === 'Error') {
+            calcResult.style.color = 'var(--danger)';
+            signRenderer.innerHTML = '<div class="sign-placeholder">Cannot render error result</div>';
+        } else {
+            calcResult.style.color = 'var(--accent)';
+            renderSigns(data.calc_result);
+        }
+    } else {
+        calcResult.textContent = '—';
+        signRenderer.innerHTML = '<div class="sign-placeholder">Perform a calculation to see result signs</div>';
+    }
+}
+
+// ─── Camera Start ────────────────────────────────────────────
+function enableCam() {
+    if (!handLandmarker) {
+        alert("MediaPipe is still loading. Please wait a moment and try again.");
+        return;
+    }
+
+    introScreen.classList.add('slide-up');
+    setTimeout(() => {
+        introScreen.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+    }, 700);
+
+    webcamRunning = true;
+
+    navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, facingMode: "user" } })
+        .then(stream => {
+            video.srcObject = stream;
+            video.addEventListener("loadeddata", predictWebcam);
+        })
+        .catch(err => {
+            alert("Webcam access denied. Please allow camera access and reload.");
+            console.error(err);
+        });
+}
+
+startBtn.addEventListener("click", enableCam);
+
+// ─── Draw Landmarks ──────────────────────────────────────────
+function drawLandmarks(landmarks) {
+    if (currentSkeletonStyle === 'off') return;
+
+    const isNeon    = currentSkeletonStyle === 'neon';
+    const isMinimal = currentSkeletonStyle === 'minimal';
+
+    const boneColor  = isNeon ? 'rgba(88, 166, 255, 0.85)' : 'rgba(200, 200, 200, 0.6)';
+    const pointColor = isNeon ? 'rgba(63, 185, 80, 1)' : 'rgba(255, 255, 255, 0.8)';
+    const dotBg      = 'rgba(0, 0, 0, 0.6)';
+
+    // Draw bones (skip for minimal)
+    if (!isMinimal) {
+        canvasCtx.lineWidth = isNeon ? 3 : 2;
+        canvasCtx.strokeStyle = boneColor;
+        if (isNeon) {
+            canvasCtx.shadowColor = 'rgba(88, 166, 255, 0.5)';
+            canvasCtx.shadowBlur = 8;
+        }
+
+        CONNECTIONS.forEach(([a, b]) => {
+            const p1 = landmarks[a], p2 = landmarks[b];
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(p1.x * canvasElement.width, p1.y * canvasElement.height);
+            canvasCtx.lineTo(p2.x * canvasElement.width, p2.y * canvasElement.height);
+            canvasCtx.stroke();
+        });
+
+        canvasCtx.shadowBlur = 0;
+    }
+
+    // Draw points
+    const pointRadius = isMinimal ? 3 : 5;
+    landmarks.forEach(lm => {
+        const x = lm.x * canvasElement.width;
+        const y = lm.y * canvasElement.height;
+        canvasCtx.beginPath();
+        canvasCtx.arc(x, y, pointRadius, 0, 2 * Math.PI);
+        canvasCtx.fillStyle = pointColor;
+        canvasCtx.fill();
+        if (!isMinimal) {
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 2.5, 0, 2 * Math.PI);
+            canvasCtx.fillStyle = dotBg;
+            canvasCtx.fill();
+        }
+    });
+}
+
+// ─── Webcam Detection Loop ───────────────────────────────────
+async function predictWebcam() {
+    if (canvasElement.width !== video.videoWidth) {
+        canvasElement.width  = video.videoWidth;
+        canvasElement.height = video.videoHeight;
+    }
+
+    const nowMs = performance.now();
+    if (lastVideoTime !== video.currentTime) {
+        lastVideoTime = video.currentTime;
+        const results = handLandmarker.detectForVideo(video, nowMs);
+
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+        if (results.landmarks && results.landmarks.length > 0) {
+            const payloadHands = [];
+            for (const landmarks of results.landmarks) {
+                drawLandmarks(landmarks);
+                const flatCoords = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
+                payloadHands.push(flatCoords);
+            }
+            if (!isPredicting) {
+                isPredicting = true;
+                const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+                const host = window.location.host || 'localhost:8000';
+                
+                fetch(`${protocol}//${host}/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hands: payloadHands, state: clientState })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    clientState = data.state;
+                    updateHUD(data);
+                    setApiStatus(true);
+                })
+                .catch(err => {
+                    console.error("API Error:", err);
+                    setApiStatus(false);
+                })
+                .finally(() => {
+                    isPredicting = false;
+                });
+            }
+        }
+        canvasCtx.restore();
+    }
+
+    updateFPS();
+
+    if (webcamRunning) {
+        window.requestAnimationFrame(predictWebcam);
+    }
+}
+    </script>
+</body>
+</html>
