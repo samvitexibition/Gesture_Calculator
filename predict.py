@@ -95,9 +95,7 @@ def count_extended_fingers(flat_coords):
     mcp_mid = pts[9]
 
     # Inverted check: in MediaPipe normalized coords, positive Y relative to wrist means pointing DOWN
-    # Use a small deadzone threshold to prevent flickering near the boundary
-    INVERTED_THRESHOLD = 0.05
-    inverted = mcp_mid[1] > INVERTED_THRESHOLD
+    inverted = mcp_mid[1] > 0.0
 
     # 3D Euclidean distance helper
     d = lambda i, j: math.sqrt((pts[i][0]-pts[j][0])**2 + (pts[i][1]-pts[j][1])**2 + (pts[i][2]-pts[j][2])**2)
@@ -117,7 +115,15 @@ def count_extended_fingers(flat_coords):
     # 5. Thumb (CMC 1, MCP 2, IP 3, TIP 4)
     # Extended thumb points away from index MCP (5) and wrist (0)
     # Tightened thresholds to prevent fist (0) from triggering as thumb (+)
-    ext_thumb = (d(0, 4) > 1.25 * d(0, 2)) and (d(5, 4) > 0.55) and (d(9, 4) > 0.50)
+    # Curl-ratio: thumb tip must be farther from index PIP (6) than thumb IP (3) is,
+    # ensuring the thumb is truly sticking out, not just wrapped over the fingers.
+    thumb_curl_ratio = d(4, 6) / max(d(3, 6), 1e-6)
+    ext_thumb = (
+        (d(0, 4) > 1.4 * d(0, 2)) and
+        (d(5, 4) > 0.65) and
+        (d(9, 4) > 0.60) and
+        (thumb_curl_ratio > 1.3)
+    )
 
     # Check for horizontal peace sign (V-sign)
     # Tip of index and middle are far apart, and far from ring finger MCP
@@ -183,12 +189,14 @@ def evaluate_hand_gesture(flat_coords, model):
             pass
 
     # Check for operator gestures (Thumbs, Inverted actions, etc.)
-    ops = ['thumb', 'thumb_inverted', 'rock_inverted', 'peace_inverted', 'point_inverted', 'open_inverted', 'close_inverted']
+    ops = ['thumb', 'thumb_inverted', 'rock_inverted', 'peace_inverted', 'point_inverted',
+           'open_inverted', 'close_inverted', 'l_shape', 'l_shape_inverted', '4_fingers_inverted']
 
     # Give strong preference to geometric operators, as they are distinct.
     if geom_pred in ops:
-        # Only override with ML if it's a highly confident non-operator prediction.
-        if ml_pred and ml_pred not in ops and ml_conf > 85:
+        # Only override with ML if it's a VERY highly confident non-operator prediction.
+        # Raised from 85→95 to prevent ML from overriding valid inverted gestures like point_inverted (=).
+        if ml_pred and ml_pred not in ops and ml_conf > 95:
             return ml_pred, ml_conf, cnt, False
         return geom_pred, max(ml_conf, 92.0), cnt, True
 
