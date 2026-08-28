@@ -4,6 +4,7 @@ import cv2
 import pickle
 import time
 import math
+import ctypes
 # pyrefly: ignore [missing-import]
 import numpy as np
 # pyrefly: ignore [missing-import]
@@ -266,6 +267,10 @@ cooldown_frames = 0
 CONFIRM_THRESHOLD = 55  # ~1.8s - 2.0s hold required before lock-in
 COOLDOWN_MAX = 45       # ~1.5s cooldown after confirmation
 
+# Standby Mode (F12): Pause all processing, hide all HUD overlays and outputs
+standby_mode = False
+last_f12_pressed = False
+
 CONNECTIONS = [
     (0,1),(1,2),(2,3),(3,4),
     (0,5),(5,6),(6,7),(7,8),
@@ -282,6 +287,37 @@ while True:
         break
     frame = cv2.flip(frame, 1)
     h, w, _ = frame.shape
+
+    # Check F12 toggle via Windows API (works globally)
+    f12_triggered = False
+    try:
+        f12_state = bool(ctypes.windll.user32.GetAsyncKeyState(0x7B) & 0x8000)
+        if f12_state and not last_f12_pressed:
+            f12_triggered = True
+        last_f12_pressed = f12_state
+    except Exception:
+        pass
+
+    # In Standby mode: skip all mediapipe detection, calculations, and HUD drawing
+    if standby_mode and not f12_triggered:
+        cv2.imshow("Hand Gesture Calculator (2-Hand Supported)", frame)
+        key = cv2.waitKeyEx(1)
+        if key in [123, 0x7B, 0x7B0000, 0x007B0000, ord('p'), ord('P')]:
+            standby_mode = False
+            print("[STATUS] Standby Mode: OFF (Active)")
+        elif key & 0xFF == ord('q') or key == ord('q'):
+            break
+        continue
+
+    if f12_triggered:
+        standby_mode = not standby_mode
+        print(f"[STATUS] Standby Mode: {'ON (Paused / Hidden)' if standby_mode else 'OFF (Active)'}")
+        if standby_mode:
+            cv2.imshow("Hand Gesture Calculator (2-Hand Supported)", frame)
+            key = cv2.waitKeyEx(1)
+            if key & 0xFF == ord('q') or key == ord('q'):
+                break
+            continue
 
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
@@ -460,8 +496,11 @@ while True:
 
     # ─── Show frame ──────────────────────────────────────────────────────
     cv2.imshow("Hand Gesture Calculator (2-Hand Supported)", frame)
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord("q"):
+    key = cv2.waitKeyEx(1)
+    if key in [123, 0x7B, 0x7B0000, 0x007B0000, ord('p'), ord('P')]:
+        standby_mode = not standby_mode
+        print(f"[STATUS] Standby Mode: {'ON (Paused / Hidden)' if standby_mode else 'OFF (Active)'}")
+    elif key & 0xFF == ord("q") or key == ord("q"):
         break
 
 cap.release()
