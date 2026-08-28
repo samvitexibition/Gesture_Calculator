@@ -30,17 +30,18 @@ def count_extended_fingers(flat_coords):
     ext_pinky = (d(0, 20) > d(0, 18)) and (d(0, 20) > 1.1 * d(0, 17))
 
     # 5. Thumb (CMC 1, MCP 2, IP 3, TIP 4)
-    # Extended thumb points away from index MCP (5) and wrist (0)
-    # Tightened thresholds to prevent fist (0) from triggering as thumb (+)
-    # Curl-ratio: thumb tip must be farther from index PIP (6) than thumb IP (3) is,
-    # ensuring the thumb is truly sticking out, not just wrapped over the fingers.
+    # Context-aware thumb detection:
+    # - When other fingers are open (e.g. Open Hand / 5), use natural threshold so 5 doesn't become 4.
+    # - When other fingers are curled (e.g. Fist / 0 vs Thumbs Up / +), use strict threshold so 0 doesn't become +.
+    ext_thumb_general = (d(0, 4) > 1.15 * d(0, 2)) and (d(5, 4) > 0.38)
     thumb_curl_ratio = d(4, 6) / max(d(3, 6), 1e-6)
-    ext_thumb = (
-        (d(0, 4) > 1.4 * d(0, 2)) and
-        (d(5, 4) > 0.65) and
-        (d(9, 4) > 0.60) and
-        (thumb_curl_ratio > 1.3)
+    ext_thumb_strict = (
+        (d(0, 4) > 1.35 * d(0, 2)) and
+        (d(5, 4) > 0.55) and
+        (thumb_curl_ratio > 1.25)
     )
+    other_fingers_cnt = sum([ext_index, ext_middle, ext_ring, ext_pinky])
+    ext_thumb = ext_thumb_general if other_fingers_cnt >= 2 else ext_thumb_strict
 
     # Check for horizontal peace sign (V-sign)
     is_v_sign = (d(8, 12) > 0.3) and (d(8, 13) > 0.3) and (d(12, 13) > 0.3)
