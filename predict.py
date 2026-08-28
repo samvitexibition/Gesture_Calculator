@@ -37,6 +37,7 @@ GESTURE_MAP = {
 
     # Actions
     'point_inverted': {'symbol': '=',     'display': 'Point Down → ='},
+    'l_shape_inverted': {'symbol': '=',   'display': 'Point Down → ='},
     'open_inverted':  {'symbol': 'Clear', 'display': 'Open Inv → Clear'},
     'close_inverted': {'symbol': 'Back',  'display': 'Fist Inv → Back'},
 }
