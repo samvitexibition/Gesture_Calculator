@@ -11,7 +11,8 @@ def count_extended_fingers(flat_coords):
     mcp_mid = pts[9]
 
     # Inverted check: in MediaPipe normalized coords, positive Y relative to wrist means pointing DOWN
-    inverted = mcp_mid[1] > 0.0
+    # Check middle finger MCP or middle finger TIP below wrist
+    inverted = (mcp_mid[1] > 0.0) or (pts[12][1] > 0.0)
 
     # 3D Euclidean distance helper
     d = lambda i, j: math.sqrt((pts[i][0]-pts[j][0])**2 + (pts[i][1]-pts[j][1])**2 + (pts[i][2]-pts[j][2])**2)

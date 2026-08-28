@@ -48,7 +48,7 @@ GESTURE_MAP = {
     'rock':           {'symbol': '(',     'display': 'Rock → ('},
     'peace_inverted': {'symbol': '/',     'display': 'Peace Inv → ÷'},
     'l_shape':        {'symbol': ')',     'display': 'L-Shape → )'},
-    '4_fingers_inverted': {'symbol': '.',  'display': '4-Fingers Inv → .'},
+    '4_fingers_inverted': {'symbol': 'Clear', 'display': 'Open Inv → Clear'},
     'point_inverted': {'symbol': '=',     'display': 'Point Down → ='},
     'l_shape_inverted': {'symbol': '=',   'display': 'Point Down → ='},
     'open_inverted':  {'symbol': 'Clear', 'display': 'Open Inv → Clear'},
