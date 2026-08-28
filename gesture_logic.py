@@ -107,6 +107,10 @@ def evaluate_hand_gesture(flat_coords, model):
            'rock', 'l_shape', 'peace_inverted', '4_fingers_inverted']
 
     if geom_pred in ops:
+        # If ML model confidently predicts a DIFFERENT operator (e.g., point_inverted instead of l_shape_inverted), trust the ML model.
+        if ml_pred in ops and ml_pred != geom_pred and ml_conf > 75:
+            return ml_pred, ml_conf, cnt, True
+            
         # Only override with ML if it's a VERY highly confident non-operator prediction.
         # Raised from 85→95 to prevent ML from overriding valid inverted gestures like point_inverted (=).
         if ml_pred and ml_pred not in ops and ml_conf > 95:
