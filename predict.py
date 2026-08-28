@@ -260,8 +260,8 @@ calc_result = ""
 consecutive_pred = None
 consecutive_count = 0
 cooldown_frames = 0
-CONFIRM_THRESHOLD = 12
-COOLDOWN_MAX = 22
+CONFIRM_THRESHOLD = 27  # Increased from 12 to 27 (~0.5s slower lock-in at ~30fps)
+COOLDOWN_MAX = 30       # Increased from 22 to 30 for cleaner gap between gestures
 
 CONNECTIONS = [
     (0,1),(1,2),(2,3),(3,4),
