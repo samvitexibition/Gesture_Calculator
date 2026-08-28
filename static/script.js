@@ -709,11 +709,48 @@ function drawLandmarks(landmarks) {
     });
 }
 
+// ─── Standby Mode (F12 / P) ──────────────────────────────
+let isStandbyMode = false;
+
+function toggleStandbyMode() {
+    isStandbyMode = !isStandbyMode;
+    document.body.classList.toggle('standby-mode', isStandbyMode);
+    
+    if (isStandbyMode) {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        console.log("Standby Mode: ON (Detection paused, UI/outputs hidden)");
+    } else {
+        console.log("Standby Mode: OFF (Active)");
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    // Intercept F12 (prevents Firefox developer tools and toggles standby)
+    if (e.key === 'F12' || e.code === 'F12' || (e.key.toLowerCase() === 'p' && !e.target.matches('input, select, textarea'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleStandbyMode();
+    }
+});
+
+const standbyBtn = document.getElementById('standby-btn');
+if (standbyBtn) {
+    standbyBtn.addEventListener('click', toggleStandbyMode);
+}
+
 // ─── Webcam Detection Loop ───────────────────────────────────
 async function predictWebcam() {
     if (canvasElement.width !== video.videoWidth) {
         canvasElement.width  = video.videoWidth;
         canvasElement.height = video.videoHeight;
+    }
+
+    if (isStandbyMode) {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        if (webcamRunning) {
+            window.requestAnimationFrame(predictWebcam);
+        }
+        return; // Skip AI detection and outputs in standby mode
     }
 
     const nowMs = performance.now();

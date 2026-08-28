@@ -813,6 +813,31 @@ canvas {
     text-transform: uppercase;
     letter-spacing: 1px;
 }
+
+/* ===== STANDBY / STEALTH MODE (F12) ===== */
+body.standby-mode .gesture-panel,
+body.standby-mode .right-col,
+body.standby-mode .camera-badges,
+body.standby-mode .navbar,
+body.standby-mode .key-indicators,
+body.standby-mode #output_canvas,
+body.standby-mode .modal {
+    display: none !important;
+}
+body.standby-mode .grid-container {
+    display: block !important;
+    padding: 0 !important;
+    height: 100vh !important;
+    max-width: 100% !important;
+}
+body.standby-mode .left-col {
+    height: 100vh !important;
+}
+body.standby-mode .camera-panel {
+    height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+}
     </style>
     <!-- MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js" crossorigin="anonymous"></script>
@@ -1206,6 +1231,7 @@ canvas {
                 <span class="nav-status-dot" id="ws-status" title="WebSocket connected">●</span>
             </div>
             <div class="nav-right">
+                <button class="nav-btn" id="standby-btn" title="Toggle Standby Mode (F12 / P)">⏸ Standby (F12)</button>
                 <button class="nav-btn" id="open-calib-btn">🎯 Calibrate</button>
                 <button class="nav-btn" id="open-gesture-btn">📖 Gesture Guide</button>
                 <button class="nav-btn primary-nav-btn" id="open-settings-btn">⚙ Settings</button>
@@ -1743,11 +1769,48 @@ function drawLandmarks(landmarks) {
     });
 }
 
+// ─── Standby Mode (F12 / P) ──────────────────────────────
+let isStandbyMode = false;
+
+function toggleStandbyMode() {
+    isStandbyMode = !isStandbyMode;
+    document.body.classList.toggle('standby-mode', isStandbyMode);
+    
+    if (isStandbyMode) {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        console.log("Standby Mode: ON (Detection paused, UI/outputs hidden)");
+    } else {
+        console.log("Standby Mode: OFF (Active)");
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    // Intercept F12 (prevents Firefox developer tools and toggles standby)
+    if (e.key === 'F12' || e.code === 'F12' || (e.key.toLowerCase() === 'p' && !e.target.matches('input, select, textarea'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleStandbyMode();
+    }
+});
+
+const standbyBtn = document.getElementById('standby-btn');
+if (standbyBtn) {
+    standbyBtn.addEventListener('click', toggleStandbyMode);
+}
+
 // ─── Webcam Detection Loop ───────────────────────────────────
 async function predictWebcam() {
     if (canvasElement.width !== video.videoWidth) {
         canvasElement.width  = video.videoWidth;
         canvasElement.height = video.videoHeight;
+    }
+
+    if (isStandbyMode) {
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        if (webcamRunning) {
+            window.requestAnimationFrame(predictWebcam);
+        }
+        return; // Skip AI detection and outputs in standby mode
     }
 
     const nowMs = performance.now();
