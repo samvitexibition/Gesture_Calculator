@@ -1,7 +1,8 @@
+# pyrefly: ignore [missing-import]
 import pickle
 
 try:
-    with open('C:\\Users\\Student3\\Downloads\\AI\\models\\sign_model.pkl', 'rb') as f:
+    with open('models/sign_model.pkl', 'rb') as f:
         model = pickle.load(f)
     print('Model loaded successfully')
 except Exception as e:

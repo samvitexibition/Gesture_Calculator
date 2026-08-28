@@ -1,9 +1,14 @@
 import csv
 import os
+# pyrefly: ignore [missing-import]
 import pickle
+# pyrefly: ignore [missing-import]
 import numpy as np
+# pyrefly: ignore [missing-import]
 from sklearn.ensemble import RandomForestClassifier
+# pyrefly: ignore [missing-import]
 from sklearn.model_selection import train_test_split
+# pyrefly: ignore [missing-import]
 from sklearn.metrics import classification_report
 
 # 1. Load the landmarks.csv dataset

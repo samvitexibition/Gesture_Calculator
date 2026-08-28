@@ -1,5 +1,6 @@
 import os
 import time
+# pyrefly: ignore [missing-import]
 import numpy as np
 import subprocess
 import generate_synthetic_data

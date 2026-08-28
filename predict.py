@@ -1,10 +1,16 @@
+# pyrefly: ignore [missing-import]
 import cv2
+# pyrefly: ignore [missing-import]
 import pickle
 import time
 import math
+# pyrefly: ignore [missing-import]
 import numpy as np
+# pyrefly: ignore [missing-import]
 import mediapipe as mp
+# pyrefly: ignore [missing-import]
 from mediapipe.tasks import python
+# pyrefly: ignore [missing-import]
 from mediapipe.tasks.python import vision
 from normalize import normalize_landmarks_from_mediapipe
 
@@ -89,7 +95,9 @@ def count_extended_fingers(flat_coords):
     mcp_mid = pts[9]
 
     # Inverted check: in MediaPipe normalized coords, positive Y relative to wrist means pointing DOWN
-    inverted = mcp_mid[1] > 0.0
+    # Use a small deadzone threshold to prevent flickering near the boundary
+    INVERTED_THRESHOLD = 0.05
+    inverted = mcp_mid[1] > INVERTED_THRESHOLD
 
     # 3D Euclidean distance helper
     d = lambda i, j: math.sqrt((pts[i][0]-pts[j][0])**2 + (pts[i][1]-pts[j][1])**2 + (pts[i][2]-pts[j][2])**2)
@@ -108,7 +116,8 @@ def count_extended_fingers(flat_coords):
 
     # 5. Thumb (CMC 1, MCP 2, IP 3, TIP 4)
     # Extended thumb points away from index MCP (5) and wrist (0)
-    ext_thumb = (d(0, 4) > 1.1 * d(0, 2)) and (d(5, 4) > 0.40)
+    # Tightened thresholds to prevent fist (0) from triggering as thumb (+)
+    ext_thumb = (d(0, 4) > 1.25 * d(0, 2)) and (d(5, 4) > 0.55) and (d(9, 4) > 0.50)
 
     # Check for horizontal peace sign (V-sign)
     # Tip of index and middle are far apart, and far from ring finger MCP
@@ -134,8 +143,10 @@ def classify_geometry(flat_coords):
         g = 'peace_horizontal'
     elif ext_index and ext_middle and not ext_ring and not ext_pinky and not ext_thumb:
         g = 'peace'
-    elif ext_index and not ext_middle and not ext_ring and not ext_pinky:
+    elif ext_index and not ext_middle and not ext_ring and not ext_pinky and not ext_thumb:
         g = 'point'
+    elif ext_index and not ext_middle and not ext_ring and not ext_pinky and ext_thumb:
+        g = 'l_shape'
     elif ext_thumb and ext_index and not ext_middle and not ext_ring and not ext_pinky:
         g = 'l_shape'
     elif ext_index and ext_pinky and not ext_middle and not ext_ring:
@@ -356,7 +367,7 @@ while True:
             symbol = gesture_info['symbol']
             is_operator = symbol in ['+', '-', '*', '/', '=']
             
-            if is_operator and confidence < 75.0:
+            if is_operator and confidence < 70.0:
                 consecutive_count = 0
             else:
                 if prediction == consecutive_pred:

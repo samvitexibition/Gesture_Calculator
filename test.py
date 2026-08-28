@@ -1,7 +1,12 @@
+# pyrefly: ignore [missing-import]
 import cv2
+# pyrefly: ignore [missing-import]
 import numpy as np
+# pyrefly: ignore [missing-import]
 import mediapipe as mp
+# pyrefly: ignore [missing-import]
 from mediapipe.tasks import python
+# pyrefly: ignore [missing-import]
 from mediapipe.tasks.python import vision
 
 def test_hand_landmarker_live():

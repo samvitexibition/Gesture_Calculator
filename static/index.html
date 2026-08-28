@@ -1557,28 +1557,27 @@ function playCommitSound() {
     } catch (_) { /* ignore audio errors */ }
 }
 
-// ─── API Client ───────────────────────────────────────────────
-let clientState = {
-    calc_expression: "",
-    calc_result: "",
-    consecutive_pred: null,
-    consecutive_count: 0,
-    cooldown_frames: 0,
-    smoothed_hand_cache: {}
-};
-let isPredicting = false;
+// ─── WebSocket ───────────────────────────────────────────────
+function connectWebSocket() {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    let host = window.location.host || 'localhost:8000'; // Fallback if file://
+    ws = new WebSocket(`${protocol}//${host}/ws`);
 
-function setApiStatus(connected) {
-    const statusDot = document.getElementById('ws-status');
-    if (statusDot) {
-        if (connected) {
-            statusDot.style.color = 'var(--success)';
-            statusDot.title = 'API connected';
-        } else {
-            statusDot.style.color = 'var(--danger)';
-            statusDot.title = 'API disconnected';
-        }
-    }
+    const wsStatus = document.getElementById('ws-status');
+
+    ws.onopen = () => {
+        if (wsStatus) { wsStatus.style.color = 'var(--success)'; wsStatus.title = 'WebSocket connected'; }
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        updateHUD(data);
+    };
+
+    ws.onclose = () => {
+        if (wsStatus) { wsStatus.style.color = 'var(--danger)'; wsStatus.title = 'WebSocket disconnected'; }
+        setTimeout(connectWebSocket, 1000);
+    };
 }
 
 // ─── Sign Renderer ───────────────────────────────────────────
@@ -1680,6 +1679,7 @@ function enableCam() {
     }, 700);
 
     webcamRunning = true;
+    connectWebSocket();
 
     navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720, facingMode: "user" } })
         .then(stream => {
@@ -1765,29 +1765,8 @@ async function predictWebcam() {
                 const flatCoords = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
                 payloadHands.push(flatCoords);
             }
-            if (!isPredicting) {
-                isPredicting = true;
-                const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-                const host = window.location.host || 'localhost:8000';
-                
-                fetch(`${protocol}//${host}/predict`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ hands: payloadHands, state: clientState })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    clientState = data.state;
-                    updateHUD(data);
-                    setApiStatus(true);
-                })
-                .catch(err => {
-                    console.error("API Error:", err);
-                    setApiStatus(false);
-                })
-                .finally(() => {
-                    isPredicting = false;
-                });
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ hands: payloadHands }));
             }
         }
         canvasCtx.restore();
