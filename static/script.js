@@ -740,7 +740,8 @@ if (standbyBtn) {
 
 // ─── Webcam Detection Loop ───────────────────────────────────
 async function predictWebcam() {
-    if (canvasElement.width !== video.videoWidth) {
+    if (video.videoWidth > 0 && video.videoHeight > 0 && 
+        (canvasElement.width !== video.videoWidth || canvasElement.height !== video.videoHeight)) {
         canvasElement.width  = video.videoWidth;
         canvasElement.height = video.videoHeight;
     }
