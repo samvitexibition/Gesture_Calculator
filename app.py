@@ -73,6 +73,7 @@ async def websocket_endpoint(websocket: WebSocket):
     CONFIRM_THRESHOLD = 55  # ~1.8s - 2.0s hold required before lock-in
     COOLDOWN_MAX = 45       # ~1.5s cooldown after confirmation
     smoothed_hand_cache = {}
+    prediction_history = []
 
     try:
         while True:
@@ -92,7 +93,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     raw_feats = normalize_landmarks_from_list(hand_coords)
                     
                     # Temporal smoothing
-                    alpha = 0.65
+                    alpha = 0.3
                     if idx in smoothed_hand_cache:
                         prev_feats = smoothed_hand_cache[idx]
                         norm_feats = [alpha * curr + (1.0 - alpha) * prev for curr, prev in zip(raw_feats, prev_feats)]
@@ -127,6 +128,16 @@ async def websocket_endpoint(websocket: WebSocket):
                         }
                         prediction = count_map.get(total_cnt)
                         confidence = (hand_evals[0][1] + hand_evals[1][1]) / 2.0
+
+                if prediction:
+                    prediction_history.append(prediction)
+                    if len(prediction_history) > 7:
+                        prediction_history.pop(0)
+                    prediction = max(set(prediction_history), key=prediction_history.count)
+                else:
+                    prediction_history.clear()
+            else:
+                prediction_history.clear()
 
             # Logic for lock-in
             progress = 0.0
